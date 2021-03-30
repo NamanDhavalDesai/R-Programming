@@ -1,0 +1,110 @@
+/** SET OPERATORS **/
+
+/* except */
+/* intersect */
+/* union */
+/* union all */
+/* union corresponding */
+/* outer union  */
+/* outer union corr */
+
+data one;
+input id;
+cards;
+1
+2
+4
+8
+9
+9
+2
+3
+7
+.
+0
+;
+run;
+
+data two;
+input id;
+cards;
+2
+1
+8
+3
+5
+4
+6
+9
+;
+run;
+
+/** it will take left side table value are not there in second data set values **/
+proc sql;
+create table except_operator as
+select * from one 
+except 
+select * from two;
+quit;
+
+/** it will take common records from the both the tables and it won't allow duplicates **/ 
+proc sql;
+create table intersect_operator as
+select * from one 
+intersect 
+select * from two;
+quit;
+
+/** it will take common records from the both the tables and it will allow duplicates **/ 
+proc sql;
+create table inner_join_operator as
+select * from one  a
+inner join  two b
+on a.id =b.ids;
+quit;
+
+/** it will merge vertically and it won't allow duplicates **/
+proc sql;
+create table union_operator as
+select * from one  
+union 
+select * from two;
+quit;
+
+
+/** it will merge vertically and it will allow duplicates **/
+proc sql;
+create table union_all_operator as
+select * from one  
+union all
+select * from two;
+quit;
+
+
+
+/** it will merge vertically by using correspondent variable(id) it won't allow duplicates **/
+
+proc sql;
+create table union_corr_operator as
+select * from one  
+union corresponding
+select * from two;
+quit;
+
+/** it will take only left side values and also take right side table it will give value is missing **/
+proc sql;
+create table outer_union_operator as
+select * from one  
+outer union 
+select * from two;
+quit;
+
+/** it will merge vertically by using corresponding variable  **/
+
+proc sql;
+create table outer_union_corr_operator as
+select * from one  
+outer union corr
+select * from two
+;
+quit;

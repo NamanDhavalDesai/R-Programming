@@ -1,0 +1,146 @@
+data one;
+infile datalines;
+input studid $ studname $;
+datalines;
+s101 Ram
+s102 sudha
+s103 preet
+;
+run;
+
+data two;
+infile datalines;
+input studids $ maths science social;
+datalines;
+s101 55 65 75
+s102 65 95 75
+s104 55 65 75
+s105 75 85 95
+s105 88 85 96 
+;
+run;
+
+/** it will merge horizentally and takes all the values from the both the tables **/
+
+proc sql;
+create table full_join as
+select * from one a full join two b
+on  a.studid=b.studids;
+quit;
+
+
+/** it will merge horizentally and takes common the values from the both the tables **/
+proc sql;
+create table inner_join as
+select * from one a inner join two b
+on  a.studid=b.studids;
+quit;
+
+/** it will merge horizentally and it takes all the values from left side table and matching records from the right table **/
+proc sql;
+create table left_join as
+select * from one a left join two b
+on  a.studid=b.studids;
+quit;
+
+/** it will merge horizentally and it takes all the values from right side table and matching records from the left table **/
+
+proc sql;
+create table right_join as
+select * from one a right join two b
+on  a.studid=b.studids;
+quit;
+
+/** cross join **/
+/** it takes all the records from the first table and multiplied with all the records from the seconds table **/
+proc sql;
+create table cross_join as
+select * from one a cross join two b;
+quit;
+
+proc sql;
+create table cross_join as
+select * from one a , two b;
+quit;
+
+
+/** joins in datastep **/
+data one;
+infile datalines;
+input studid $ studname $;
+datalines;
+s101 Ram
+s102 sudha
+s103 preet
+;
+run;
+
+data two;
+infile datalines;
+input studid $ maths science social;
+datalines;
+s101 55 65 75
+s102 65 95 75
+s104 55 65 75
+s105 75 85 95
+s105 88 85 96 
+;
+run;
+
+proc sql;
+create table full_joinsql as
+select * from one a full join two b
+on  a.studid=b.studid;
+quit;
+
+
+proc sort data=one out=one_sort;
+by studid;
+run;
+
+proc sort data=two out=two_sort;
+by studid;
+run;
+
+/** full join in data step **/
+data full_join;
+merge one_sort(in=a) two_sort(in=b);
+by studid;
+if a or b;
+run;
+
+
+data inner_join;
+merge one_sort(in=a) two_sort(in=b);
+by studid;
+if a and b;
+run;
+
+proc sql;
+create table inner_joinsql as
+select * from one a inner join two b
+on  a.studid=b.studid;
+quit;
+
+data left_join;
+merge one_sort(in=a) two_sort(in=b);
+by studid;
+if a ;
+run;
+
+proc sql;
+create table sql_left_join as
+select * from one a left join two b on a.studid=b.studid;
+quit;
+
+
+data right_join;
+merge one_sort(in=a) two_sort(in=b);
+by studid;
+if b;
+run;
+
+proc sql;
+create table sql_right_join as
+select * from one a right join two b on a.studid=b.studid;
+quit;
