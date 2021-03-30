@@ -1,0 +1,12 @@
+x<-rep(rep(c(1,2,3),each=3),each=3)
+y<-rep(rep(c(1,2,3),each=3),3)
+z<-rep(rep(c(1,2,3),3),3)
+aa<-interaction(x,y,z)
+ab<-split(1:81,aa)
+ad<-NULL
+for(af in 0:2)
+  for(ac in seq(1,9,by=3.0))
+    ad<-cbind(ad,ab[[ac+af]],ab[[(ac+9+af)]],ab[[(ac+18+af)]])
+colnames(ad)<-paste('+',1:27)
+row.names(ad)<-paste(seq(1,81,by=27.0)-1)
+print(ad)
