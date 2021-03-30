@@ -1,0 +1,36 @@
+---
+title: "IntroductionToMarkdown"
+author: "NRX07"
+date: "11/05/2020"
+---
+
+# Heading 1
+
+Use # for main heading.
+
+## Heading 2
+
+Use ## for sub-heading 1.
+
+### Heading 3
+
+Use ### for sub-heading 2.
+
+- Use *here_* to print in *italics*  
+- Use **here_** to print in **bold**  
+- Use `here_` to print in a `Box`  
+
+```{r setval , echo=TRUE}
+library(knitr)
+opts_chunk$set(echo=FALSE)#This will set the global option of all the chunks.
+```
+
+```{r printing , echo=TRUE}
+#We can overwrite global options like this for indivisual chunks.
+print("Hello world")#If you are making a plot do not forget to use fig.height and fig.width to set the border size of the plot.  We can set the echo=FALSE id we dont want the code. We can set the results="hide" then we can use the variable `{varnames_}` in normal lines too. Rmd gets converted to md and then it gets converted in html for us to see. we can set the results='asis' to get the output as it is on the html page. For this we can use xtable which a handly function. If the code inside the chunk requires a lot of computational power then we cans et cache=TRUE but we can not set it globally, if the code changes the cache ie, th e output will update too hence we have to see that one code chunk is not dependant on another.
+```
+xtable (xtable package) Generate a nicely formatted table for LaTeX or a basic table for HTML. x – An R object that could conceivably be formatted into a table.  
+Use [name](link) to go to various websites.  
+[Youtube](https://www.youtube.com/)  
+See rest from [here](https://rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf)  
+
