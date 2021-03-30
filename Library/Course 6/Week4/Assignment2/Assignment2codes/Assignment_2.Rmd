@@ -1,0 +1,105 @@
+---
+title: "Basic Inferential Data Analysis"
+author: "Naman Desai"
+date: "08/07/2020"
+output: pdf_document
+---
+```{r Pre}
+#Setting the echos of all the chunks equal to true.
+knitr::opts_chunk$set(echo=TRUE)
+#Loading required packages.
+library(ggplot2)
+```
+## Overview.
+The dataset is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid). Using confidence intervals and hypothesis tests to compare tooth growth by supp and dose.  
+
+## Assumptions.
+In this report it is natural to get slight errors which ahve been calculated. The assumuption is that if the p-value is less than 5 percent which is usually the standard error rate then we assume that the two will be the same.  
+1. Members of the sample population, i.e. the 60 guinea pigs, are representative of the entire population of guinea pigs. This assumption allows us to generalize the results.  
+2. The experiment was done with random assignment of guinea pigs to different Supplement Dose Level categories and Supplement Delivery Methods to take care of noise that might affect the outcome.  
+3. For the t-tests, the variances are assumed to be different for the two groups being compared. This assumption is less stronger than the case in which the variances are assumed to be equal.
+
+## Simulation.
+
+### Loading the data
+Loading the data and storing it in a variable data.  
+The ToothGrowth dataframe is a pre-defined data frame that comes built in in R. Hence one must load and not install or read it from some other place/platform.
+```{r Loading the data}
+data("ToothGrowth")
+data<-ToothGrowth
+```
+
+### Exploring the data.
+Exploring the data and seeing how it looks and what are the classes of the variables(columns).
+```{r Exploration}
+str(data)
+head(data,3) 
+```
+The dataset has 3 columns. The first length increase. The second is the the supplement. The third is the dosage levels. There are 10 readings in each supplementary dosage cateory.  
+
+### Plotting the data.
+Plotting a box plot to visualize and study the data.
+```{r PLotting The Data}
+ggplot(ToothGrowth,aes(x=factor(dose),y=len,fill=factor(dose)))+ geom_point(aes(col=dose))+facet_grid(.~supp)+scale_x_discrete("D osage in mg")+scale_y_continuous("Tooth  Length")+scale_fill_discrete(name="Dose in  mg")+theme(legend.position = "none")+ggtitle("Effect of  Supplement Type and Dosage seen in length of Tooth Growth")
+```
+
+## Hyposthesis Testing using confidance Intervals.
+
+#### Using Supplement Delivery Method As A Factor:
+Analyzing the data for correlation between the Delivery Method and change in Tooth Growth, assuming unequal variances between the two groups.  
+Here the NULL Hypothesis is that, There is no correlation between the Delivery Method and Tooth Length.  
+```{r test 1}
+t.test(len~supp,paired=FALSE,var.equal=FALSE,data=ToothGrowth)
+```
+Here, the 95% confidence interval is between -0.1710156 and 7.5710156, which contains zero and the p-value is 0.06063>0.05. Hence, we cannot reject the NULL Hypothesis.  
+From this t-test, we conclude that, there is no correlation between the Delivery Method and Tooth Length.  
+
+#### Using Supplement Dosage Level As A Factor:
+Analyzing the data for correlation between the Dose Level and change in Tooth Growth, assuming unequal variances between the two groups.  
+Here the NULL Hypothesis for the following three t-tests is that, there is no correlation between the Dose Level and Tooth Length. 
+
+1) For the dosage between 0.5 and 1.  
+```{r test 2.1}
+t.test(len~dose,paired=FALSE,var.equal=FALSE,data=subset(ToothGrowth, dose %in% c(0.5, 1.0)))
+```
+Here, the 95% confidence interval is between -11.983781 and -6.276219, which does not contain zero and the p-value is 1.268e-07<0.05. Hence, we can safely reject the NULL Hypothesis.
+
+2) For the dosage between 0.5 and 2.  
+```{r test 2.2}
+t.test(len~dose,paired=FALSE,var.equal=FALSE,data=subset(ToothGrowth, dose %in% c(0.5, 2.0)))
+```
+Here, the 95% confidence interval is between -18.15617 and -12.83383, which does not contain zero and the p-value is 4.398e-14<0.05. Hence, we can safely reject the NULL Hypothesis.
+
+3) For the dosage between 1 and 2.  
+```{r test 2.3}
+t.test(len~dose,paired=FALSE,var.equal=FALSE,data=subset(ToothGrowth, dose %in% c(1.0, 2.0)))
+```
+Here, the 95% confidence interval is between -8.996481 and -3.733519, which does not contain zero and the p-valu is 1.906e-05<0.05. Hence, we can safely reject the NULL Hypothesis.
+
+From these three t-tests, we conclude that, There is significant correlation between the Dose Level and Tooth Length.
+
+#### Using Supplement Delivery Method As A Factor Within Dose Levels:  
+Analyzing the data for correlation between the Delivery Method and change in Tooth Growth within each Dose Level, assuming unequal variances between the two groups.  
+Here the NULL Hypothesis for the following three t-tests is that, There is no correlation between the Delivery Method and Tooth Length for the given Dose Level.  
+
+1) For different supplements when the dosage is 0.5.
+```{r test 3.1}
+t.test(len~supp,paired=F,var.equal=F,data=subset(ToothGrowth, dose %in% c(0.5)))
+```
+Here, the 95% confidence interval is between 1.719057 and  8.780943, which does not contain zero and the p-value is 0.006359<0.05. Hence, we can safely reject the NULL Hypothesis.
+
+2) For different supplements when the dosage is 1.0.
+```{r test 3.2}
+t.test(len~supp,paired=F,var.equal=F,data=subset(ToothGrowth, dose %in% c(1.0)))
+```
+Here, the 95% confidence interval is between 2.802148 and 9.057852, which does not contain zero and the p-value is 0.001038<0.05. Hence, we can safely reject the NULL Hypothesis.
+
+3) For different supplements when the dosage is 2.0.
+```{r test 3.3}
+t.test(len~supp,paired=F,var.equal=F,data=subset(ToothGrowth, dose %in% c(2.0)))
+```
+Here, the 95% confidence interval is between -3.79807 and 3.63807, which contains zero and the p-value is 0.9639>0.05. Hence, we cannot reject the NULL Hypothesis.
+
+## Conclusion.
+1. Increase in Supplement Dose Levels leads to overall increase in Tooth Length.  
+2. Supplement Delivery Method has no overall significant impact on Tooth Length, but for 0.5 and 1.0 Dose levels, OJ increases Tooth Length more faster compared to VC, but for 2.0 Dose Level there is no significant difference in the increase of Tooth Length by both Supplement Delivery Methods.  

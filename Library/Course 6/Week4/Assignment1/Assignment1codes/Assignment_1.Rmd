@@ -1,0 +1,136 @@
+---
+title: "Statistical Inference Course Project - A Simulation Exercise."
+author: "Naman Desai"
+date: "08/07/2020"
+output: pdf_document
+---
+```{r Pre}
+#Setting the echos of all the chunks equal to true.
+knitr::opts_chunk$set(echo=TRUE)
+#Loading required packages.
+library(ggplot2)
+```
+## Overview.
+Investigation of the exponential distribution in R and compare it with the Central Limit Theorem.  
+Illustration via simulation and association with explanatory text the properties of the distribution of the mean of 40 exponentials.
+
+## Assumptions.
+In this report it is natural to get slight errors which ahve been calculated. The assumuption is that if the error is less than 5 percent which is usually the standard error rate then we assume that the two will be the same.
+
+## Content.
+This project investigates the Exponential distribution in R and compares it with the Central Limit Theorem. The mean of the Exponential distribution is $\frac{1}{\lambda}$ and the standard deviation is also $\frac{1}{\lambda}$. A thousand simulations of the distribution of 40 exponentials would be investigated and proved by,  
+1) Showing the sample mean and comparing it to the theoreical mean of the distribution.  
+2) Showing how variable the sample is (via sample variance) and comparing it to the theoretical variance of the distribution.  
+3) Showing that the distribution is approximately normal.  
+
+## Simulation.
+The exponential distribution can be simulated in R with rexp(n, $\lambda$), where $\lambda$ is the rate parameter and n is the number of observations. For the purpose of all the simulations in this project, value of $\lambda$ is set to 0.2.  
+Running a series of 1000 simulations to create a data set for comparison to theory. Each simulation will contain 40 observations and the expoential distribution function will be set to “rexp(40, 0.2)”.  
+```{r Initialization}
+no    <-1000 #Setting the number of simulations to 1000.
+size  <-40   #Setting the sample size to 40.
+lambda<-0.2  #Setting the lambda to 0.2.
+set.seed(1)  #Setting the seed.
+#Making a matrix of 1000 rows and 40 columns, where each value is an random exponential value having lambda 0.2.
+datamatrix<-matrix(rexp(n=no*size,rate=lambda),no,size)
+#Taking the means of the rows.
+meanofrows<-rowMeans(datamatrix)
+#Merging and making it into a data frame.
+data<-data.frame(cbind(datamatrix,meanofrows))
+```
+
+### Exploring the data.
+Exploring the data to see what it looks like.
+```{r Exploration}
+hist(data$meanofrows,breaks = 40)
+mean<-mean(data$meanofrows)
+```
+The plot shows somewhat of a bell curve having mean at arround 5 which is a good sign as 1/0.2 (1/lambda) is 5 too.
+
+### Sample mean vs. Theoretical mean.
+
+Theoretical Proof.  
+The sample mean can be calulated by,
+```{r Sample Mean}
+samplemean<-mean(data$meanofrows)
+```
+The sample mean is, 4.99002520077716.
+The theoretical mean can be calulated by,
+```{r Theoretical Mean}
+theoreticalmean<-(1/lambda)
+```
+The sample mean is, 5.00000000000000.
+There is a negligible difference between the sample and theoretical means of, 0.00997479922284.
+Therefore we can calculate the error percentage,
+```{r Error In Mean}
+errormean=(0.00997479922284/5)*100
+```
+The error is negligible at 0.1994959844568 which is approximately 0.2 percent.  
+
+Simulatory Proof.  
+This is an histogram of mean distributions, the sample mean is marked with a light grey line and the theoetical mean is marked with a black line. As you can see from the values they are placed almost on top of each other hence providing more proof to the already proved evidence.  
+Potting the data,  
+```{r Mean plot}
+ggplot(data=data,aes(meanofrows))+ 
+    geom_histogram(breaks=seq(2,9,by=0.2),col="red",aes(fill=..count..))+ 
+    labs(title="Mean Distribution",x="Mean Of Simulations",y="Frequency")+ 
+    geom_vline(xintercept=samplemean,colour="lightgrey",show.legend=TRUE)+
+    geom_vline(xintercept=theoreticalmean, colour="black", show.legend=TRUE)
+```
+
+### Sample varience vs. Theoretical varience.
+
+Theoretical Proof.  
+The sample varience can be calulated by,
+```{r Sample Varience}
+samplevarience<-var(data$meanofrows)
+```
+The sample varience is, 0.617707174842697.
+The theoretical varience can be calulated by,
+```{r Theoretical Varience}
+theoreticalvarience<-((1/lambda)^2)/size
+```
+The sample mean is, 0.62500000000000.
+There is a negligible difference between the sample and theoretical means of, 0.007292825157303.
+Therefore we can calculate the error percentage,
+```{r Error In Varience}
+errorvarience=(0.007292825157303/0.625)*100
+```
+The error is negligible at 1.16685202516848 which is approximately 1.17 percent.  
+
+Simulatory Proof.  
+This is an histogram of mean distributions, the normal function is marked with a yellow line and the sample varience is marked with a black line. As one can see from the values they are placed similarly hence providing more proof to the already proved evidence.  
+Potting the data,  
+```{r Varience plot}
+ggplot(data, aes(meanofrows))+
+    geom_histogram(aes(y=..density..), alpha=1, position="identity", fill="steelblue", col="red")+
+    geom_density(colour="black", size=1)+
+    stat_function(fun=dnorm,colour="yellow",args=list(mean= theoreticalmean,sd=sqrt(theoreticalvarience)))+
+    ggtitle ("Histogram of sample means with the fitting normal curve ")+xlab("Sample mean")+ylab("Density")
+```
+
+#### q-q Plot For Quantiles.  
+
+Theoretical Proof.  
+Comparing the 95% confidence intervals of the simulated mean sample data and the theoretical normally distributed data.
+```{r Interval Calculate}
+actualconfidenceinterval<-samplemean+c(-1,1)*1.96*sqrt(samplevarience)/sqrt(size)
+theoreticalconfidencefinterval<-theoreticalmean+c(-1,1)*1.96*sqrt(theoreticalvarience)/sqrt(size)
+```
+Actual 95% confidence interval is [4.74645878874157, 5.23359161281275] and Theoretical 95% confidence interval is [4.755, 5.245] and we see that both of them are approximately same.  
+Calulating the error in both the itervals.
+```{r Interval Error}
+e1<-((4.755-4.74645878874157)/4.755)*100
+e2<-((5.245-5.23359161281275)/5.245)*100
+```
+The error in the opening interval is 0.179625893973282.  
+The error in the closing interval is 0.217509765247849.  
+The sum of the errors is 0.397135659221131 which is approximately 0.40 which is negligible hence it can be said that they are the same.  
+
+Simulatory Proof.  
+```{r Plot Of Similarity}
+qqnorm(meanofrows)
+qqline(meanofrows)
+```
+
+The actual quantiles also closely match the theoretical. quantiles, hence the above three steps prove that the distribution is approximately normal.

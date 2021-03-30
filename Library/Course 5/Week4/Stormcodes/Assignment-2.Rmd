@@ -1,0 +1,212 @@
+---
+title: "Reproducible Research Assignment - 2"
+author: "Naman Desai"
+date: "20/06/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+## Calculating the deaths or injuries and economy loss by loss of property and crops with respect to various calamities.
+
+## Synopsis.
+1) Downloading and reading the data on which we want perform our analysis on.  
+2) Subsetting the data, chosing the variabels that we need to actually work with.  
+3) Renaming the EVNTYPE to EVENT and making/saving better names.  
+4) Subsetting the fatalities for each event.  
+5) Subsetting the injuries for each event.  
+6) Subsetting the economy loss by loss of crop for each event.  
+7) Subsetting the economy loss by loss of property for each event.  
+8) Plotting the disturbances of the calamities on human life and concluding that the tournaedoes impact huamn life significantly more than other calamities and plotting the loss of economy that occurs during different calamities and concluding that the loss of economy is the highest during floods.
+
+```{r Installing required packages}
+#Installing required packages, if not previously installed.
+packages <- c("ggplot2","dplyr","plyr","R.utils")
+if(length(setdiff(packages,rownames(installed.packages())))>0)
+    install.packages(setdiff(packages,rownames(installed.packages())))  
+```
+```{r Initiation,echo=TRUE,results='hide'}
+#Setting the echos of all the chunks equal to true.
+knitr::opts_chunk$set(echo = TRUE)
+#Loading required packages.
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(R.utils)
+```
+## Introduction.
+This is the second course project for Reproducible Research course which is part of the Coursera’s Data Science Specialization.  
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.  
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.  
+
+## Data Processing.
+The data can be downloaded by running the following code or by installing it indirectly by clicking [here]("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2").
+
+The data for this assignment come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size. The size of the data file is 49177144 bytes (46.9 MB)
+
+This is the documentation about the database available. This will direct you to either view the summary data online or to install it. These are how the variables are constructed/defined which is important for us to understand to get a proper understanding of this report.
+
++ National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
++ National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+### Downloading data.
+Checking if the data is downloaded already if not downloading it.
+```{r Downloading the data}
+#This might take some time depending on how fast the computer/laptop and the network connection is.
+if(!file.exists("StormData.csv")) 
+{
+    url<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(url, "StormData.csv.bz2")
+    bunzip2("StormData.csv.bz2", "StormData.csv")
+}
+file.exists("StormData.csv")
+```
+### Reading data.
+The data stored in the StormData.csv file is read and stored in a variable named data.
+```{r Reading the data,cache=TRUE}
+#This might take some time depending on how fast the computer/laptop and the network connection is.
+data<-read.csv(file="StormData.csv")
+```
+### Exploring the data.
+```{r Exploration of the data}
+#Exploring the data classes.
+str(data)
+```
+### Extracting variables of interest for analysis of weather impact on health and economy.
+From a list of variables in storm.data, these are columns of interest:
+
+Health variables:  
++ FATALITIES: approx. number of deaths.  
++ INJURIES: approx. number of injuries.  
+
+Economic variables:  
++ PROPDMG: approx. property damags.  
++ PROPDMGEXP: the units for property damage value.  
++ CROPDMG: approx. crop damages.  
++ CROPDMGEXP: the units for crop damage value.  
+
+Events - target variable:  
+EVTYPE: weather event (Tornados, Wind, Snow, Flood, etc..)
+```{r Extraction of variables,cache=TRUE}
+subsetdata<-data[,c( "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+```
+Checking for missing values,
+```{r Checking if there are any missing values}
+colSums(is.na(subsetdata))
+```
+### Renaming the Event names.
+Renaming the data so that the summarization occurs more efficiently.
+```{r Renaming the event names}
+# Creating a new variable EVENT to transform variable EVTYPE in groups
+subsetdata$EVENT<-"OTHER"
+# grouping by keyword in EVTYPE
+subsetdata$EVENT[grep("HAIL",subsetdata$EVTYPE,ignore.case=TRUE)]<-"HAIL"
+subsetdata$EVENT[grep("HEAT",subsetdata$EVTYPE,ignore.case=TRUE)]<-"HEAT"
+subsetdata$EVENT[grep("FLOOD",subsetdata$EVTYPE,ignore.case=TRUE)]<-"FLOOD"
+subsetdata$EVENT[grep("WIND",subsetdata$EVTYPE,ignore.case=TRUE)]<-"WIND"
+subsetdata$EVENT[grep("STORM",subsetdata$EVTYPE,ignore.case=TRUE)]<-"STORM"
+subsetdata$EVENT[grep("SNOW",subsetdata$EVTYPE,ignore.case=TRUE)]<-"SNOW"
+subsetdata$EVENT[grep("TORNADO",subsetdata$EVTYPE,ignore.case=TRUE)]<-"TORNADO"
+subsetdata$EVENT[grep("WINTER",subsetdata$EVTYPE,ignore.case=TRUE)]<-"WINTER"
+subsetdata$EVENT[grep("RAIN",subsetdata$EVTYPE,ignore.case=TRUE)]<-"RAIN"
+# Listing the transformed event types 
+sort(table(subsetdata$EVENT),decreasing=TRUE)
+```
+### Subsetting the data.
+#### Impact on health.
+Subsetting the data and storing the fatalities in a variable called fatalities.
+```{r subsetting the data based on health,fatalities}
+#Selecting the data
+selectsubsetdata<-select(subsetdata,EVENT,FATALITIES)
+#Grouping teh selected data.
+groupedselectsubsetdata<-group_by(selectsubsetdata,EVENT)
+#Summarizing the grouped, selected data.
+summarizedgroupedselectsubsetdata<-summarize(groupedselectsubsetdata,sumoffatalities=sum(FATALITIES))
+fatalities<-summarizedgroupedselectsubsetdata
+#Removinf unessesary variables.
+rm(summarizedgroupedselectsubsetdata,groupedselectsubsetdata,selectsubsetdata)
+as.data.frame(fatalities)
+```
+Subsetting the data and storing the injuries in a variable called injuries.
+```{r subsetting the data based on health,injuries}
+#Selecting the data
+selectsubsetdata<-select(subsetdata,EVENT,INJURIES)
+#Grouping teh selected data.
+groupedselectsubsetdata<-group_by(selectsubsetdata,EVENT)
+#Summarizing the grouped, selected data.
+summarizedgroupedselectsubsetdata<-summarize(groupedselectsubsetdata,sumofinjuries=sum(INJURIES))
+injuries<-summarizedgroupedselectsubsetdata
+#Removinf unessesary variables.
+rm(summarizedgroupedselectsubsetdata,groupedselectsubsetdata,selectsubsetdata)
+as.data.frame(injuries)
+```
+#### Impact on economy.
+The data provides two types of economic impact, namely property damage (PROPDMG) and crop damage (CROPDMG). The actual damage in $USD is indicated by PROPDMGEXP and CROPDMGEXP parameters. According to this link, the index in the PROPDMGEXP and CROPDMGEXP can be interpreted as the following:-  
+There is some mess in units, so we transform those variables in one unit (dollar) variable by the following rule:  
++ K or k: thousand dollars (10^3).  
++ M or m: million dollars (10^6).  
++ B or b: billion dollars (10^9).  
++ the rest would be consider as dollars.  
+
+The total damage caused by each event type is calculated with the following code.  
+New variable(s) is product of value of damage and dollar unit.
+Subsetting the data and storing the economy lost by crops in a variable called crops.
+```{r Subsetting data based on economy,crops}
+subsetdata$CROPDMGEXP<-as.character(subsetdata$CROPDMGEXP)
+subsetdata$CROPDMGEXP[is.na(subsetdata$CROPDMGEXP)]<-0
+subsetdata$CROPDMGEXP[!grepl("[KMB]",subsetdata$CROPDMGEXP,ignore.case=TRUE)]<-0
+subsetdata$CROPDMGEXP[grep("K",subsetdata$CROPDMGEXP,ignore.case=TRUE)]<-"3"
+subsetdata$CROPDMGEXP[grep("M",subsetdata$CROPDMGEXP,ignore.case=TRUE)]<-"6"
+subsetdata$CROPDMGEXP[grep("B",subsetdata$CROPDMGEXP,ignore.case=TRUE)]<-"9"
+subsetdata$CROPDMGEXP<-as.numeric(as.character(subsetdata$CROPDMGEXP))
+subsetdata$C<-subsetdata$CROPDMG*10^subsetdata$CROPDMGEXP
+#Selecting the data
+selectsubsetdata<-select(subsetdata,EVENT,C)
+#Grouping teh selected data.
+groupedselectsubsetdata<-group_by(selectsubsetdata,EVENT)
+#Summarizing the grouped, selected data.
+summarizedgroupedselectsubsetdata<-summarize(groupedselectsubsetdata,sumofcrop=sum(C))
+crop<-summarizedgroupedselectsubsetdata
+rm(summarizedgroupedselectsubsetdata,groupedselectsubsetdata,selectsubsetdata)
+as.data.frame(crop)
+```
+Subsetting the data and storing the economy lost by estate in a variable called estate.
+```{r Subsetting data based on economy,property}
+subsetdata$PROPDMGEXP<-as.character(subsetdata$PROPDMGEXP)
+subsetdata$PROPDMGEXP[is.na(subsetdata$PROPDMGEXP)]<-0
+subsetdata$PROPDMGEXP[!grepl("[KMB]",subsetdata$PROPDMGEXP,ignore.case=TRUE)]<-0
+subsetdata$PROPDMGEXP[grep("K",subsetdata$PROPDMGEXP,ignore.case=TRUE)]<-"3"
+subsetdata$PROPDMGEXP[grep("M",subsetdata$PROPDMGEXP,ignore.case=TRUE)]<-"6"
+subsetdata$PROPDMGEXP[grep("B",subsetdata$PROPDMGEXP,ignore.case=TRUE)]<-"9"
+subsetdata$PROPDMGEXP<-as.numeric(as.character(subsetdata$PROPDMGEXP))
+subsetdata$P<-subsetdata$PROPDMG*10^subsetdata$PROPDMGEXP
+#Selecting the data
+selectsubsetdata<-select(subsetdata,EVENT,P)
+#Grouping teh selected data.
+groupedselectsubsetdata<-group_by(selectsubsetdata,EVENT)
+#Summarizing the grouped, selected data.
+summarizedgroupedselectsubsetdata<-summarize(groupedselectsubsetdata,sumofproperty=sum(P))
+property<-summarizedgroupedselectsubsetdata
+rm(summarizedgroupedselectsubsetdata,groupedselectsubsetdata,selectsubsetdata)
+as.data.frame(property)
+```
+## Results.
+Plotting the graphs showing the number of injuries and deaths per calamity.
+```{r Human life plots}
+sum<-c(fatalities$sumoffatalities,injuries$sumofinjuries)
+human<-data.frame(EVENT=rep(fatalities$EVENT,2),count=sum,type=c(rep('fatalities',10),rep('injuries',10)))
+ggplot(human,aes(EVENT,count))+facet_grid(.~type)+geom_bar(stat="identity",fill="steelblue",color='red')+theme(axis.text.x=element_text(angle=90, vjust=0.5,hjust=1))+ggtitle("Calamity Consequences To Human Health")+labs(x="Event Type", y="Total human life affected")
+```
+
+As we can clearly see the fatalities or injuries caused, is seen maximum in tornaedoes.
+Plotting the graphs showing the number of injuries and deaths per calamity.
+```{r Economy plots}
+sum<-c(crop$sumofcrop,property$sumofproperty)
+economy<-data.frame(EVENT=rep(crop$EVENT,2),count=sum,type=c(rep('Loss of crops',10),rep('Loss of property',10)))
+ggplot(economy,aes(EVENT,count))+facet_grid(.~type)+geom_bar(stat="identity",fill="steelblue",color='red')+theme(axis.text.x=element_text(angle=90, vjust=0.5,hjust=1))+ggtitle("Calamity Consequences To The Economy")+labs(x="Event Type", y="Total loss")
+```
+
+As we can clearly see the loss of economy, is seen maximum by floods.

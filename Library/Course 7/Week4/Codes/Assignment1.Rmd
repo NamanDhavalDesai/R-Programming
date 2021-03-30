@@ -1,0 +1,219 @@
+---
+title: "Assignment-1"
+author: "Naman Desai"
+date: "20/07/2020"
+---
+```{r Installing required packages}
+#Installing required packages, if not previously installed.
+packages <- c("ggplot2","dplyr","plyr","GGally","VIF","car","cowplot")
+if(length(setdiff(packages,rownames(installed.packages())))>0)
+    install.packages(setdiff(packages,rownames(installed.packages())))  
+```
+```{r Initiation,echo=TRUE,results='hide',message=FALSE,warning=FALSE}
+#Setting the echos of all the chunks equal to true.
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message = FALSE)
+#Loading required packages.
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(VIF)
+library(car)
+library(cowplot)
+```
+## Summary.
+In this report, we will examine the mtcars data set and explore how miles per gallon(MPG) is affected by different variables(Most importantly transmission). In particularly, we will answer the following two questions:  
+
+(1) Is an automatic or manual transmission better for MPG,  
+(2) Quantify the MPG difference between automatic and manual transmissions.  
+
+It has been proved that a relationship exists between the type of transmission and the consumption. A simple regression model comparing the mpg (miles/gallon) with the am (transmission) detects an increase of 7.245 miles per gallon when using manual instead of automatic transmission. However, the inclusion of other variables available in the data, can detect a significant reduction in this difference. For instance, automatic cars (in this case) are heavier than manual what could probably make them lees eficient. At the same time, this automatic cars have also less qsec values, what implies that they have more horsepower. The model with just this three variables (am, qsec and wt) has a good performance and detects an increase of 2.936.
+
+## Data Processing.
+
+#### Getting the data.
+The data mtcars is a preinstalled dataset in R, hence we can ge it by using the data function in R and storing it in the variable data.
+```{r Getting the data}
+#Getting the promise.
+data("mtcars")
+data <- mtcars
+```
+
+#### Exploring the data.
+Here we can explore the data and see how we need to modify it to our preference.
+```{r Exploring the data}
+str(data)
+```
+
+Now the variables that we are going to use, we term them as important. These variables are,
+
+(1) mpg(Miles Per Gallon),
+
+(2) am(Transmission), It is a 2 level factor variable assigning 0 for automatic transmission and 1 for manual transmission.
+
+Plotting a graph for the advanced exploration of the data.
+```{r Exploring the data via a plot}
+plot1data <- select(data, "mpg", "am")
+plot1 <- ggplot(plot1data, aes(factor(am), mpg)) +
+    geom_point(colour="Steelblue", alpha = 0.5, size = 5) +
+    ggtitle("Plot of mpg by type of transmission")+
+    scale_x_discrete(name = "Transmission type")+
+    scale_y_continuous(name= "Miles per gallon")
+plot1
+```
+
+Finding the mean, count and standard deviation of mpg(Miles Per Gallon) per am(Transmission).
+```{r Transmission}
+as.data.frame(group_by(data, am) %>% summarise(count = n(), mean = mean(mpg, na.rm = TRUE), sd = sd(mpg, na.rm = TRUE)))
+```
+
+## Regression Analysis.
+
+#### Difference in varience.
+```{r Difference in Varience}
+var.test(mpg ~ am, data = data)
+```
+In this case, the p.value (0.0669) is greater than the significance level alpha = 0.05, so there is no significant difference between the variances of the groups.
+
+#### Difference in means.
+```{r Difference in means}
+t.test(mpg ~ am, data = data, var.equal = TRUE)
+```
+In this case, the p.value 0.000285 is less than level alpha = 0.05, so there is a significant difference between the means of the groups.
+
+## Regression Models.
+
+#### Normal/ simple liniar model.
+```{r lm1}
+summary(lm(mpg~am, data=data))
+```
+Here we could see that the change from auto transmission to manual transmission implies an increase of 7.245 mpg. However, this model is not quite accurate as the r.squared term is equal to 0.36 which is very significant.  
+am is a fator variable not a continuous variable.
+
+Plotting the data.
+```{r lmplot1}
+ggplot(data, aes(mpg, am)) + geom_point(colour="steelblue", alpha = 0.5, size = 3) + geom_smooth(method="lm", method.args=list(family="binomial"), fullrange=TRUE, se=FALSE, color='darkblue')
+```
+
+#### Genralised liniar model(GLM).
+```{r lm2(glm)}
+summary(glm(am~mpg,family=binomial, data=mtcars, trace=0))
+```
+am is a fator variable not a continuous variable.
+
+Plotting the data.
+```{r lmplot2}
+ggplot(data, aes(mpg, am)) + geom_point(colour="steelblue", alpha = 0.5, size = 3) + geom_smooth(method="glm", method.args=list(family="binomial"),fullrange=TRUE, se=FALSE,color='darkblue')
+```
+
+#### Multivariable liniar model.
+```{r lm3}
+# Making them all factor variables to get the plot.
+data2 <- data
+data2$cyl <- factor(data2$cyl)
+data2$vs <- factor(data2$vs)
+data2$gear <- factor(data2$gear)
+data2$carb <- factor(data2$carb)
+data2$am <- factor(data2$am,labels=c('Automatic','Manual'))
+```
+
+Plotting the data.
+```{r lmplot3}
+ggpairs(data,lower=list(continuous="smooth"))
+```
+
+As we could have find out looking the the plot above, there are some variables that are highly correlated. Using all this variables increases the true standard error and creates an non-ideal model.
+
+Including variables that we should’t have increases actual standard errors of the regression variables. 
+
+Checking which coefficients should not be prefered.
+```{r lm4}
+summary(lm(mpg~., data=data2))$coef
+```
+
+The variance inflation factor (VIF) is the increase in the variance for the ith regressor compared to the ideal setting where it is orthogonal to the other regressors. The square root of the VIF is the increase in the sd instead of variance.
+
+Checking correlations using the vif function.  
+Variation inflation factors.
+```{r lm5}
+sqrt(vif(lm(mpg~., data=data2)))
+```
+
+Picking the variables in order to perform a nested comparison. The procedure is: pick variables from low to high values picking just one when the value of sqrt(vif) are very close. So, for instance, as we have to include “am” into the model, we will not consider all the closest values (drat, vs, gear). Nest variable will be “qsec”, then wt and finaly disp.
+
+#### Model Selection.
+Selecting which variables, adds a significant p-value to the variation.
+```{r lm6}
+lm1 <- lm(mpg ~ am, data = data2)
+lm2 <- update(lm1, mpg ~ am + qsec)
+lm3 <- update(lm1, mpg ~ am + qsec + wt)
+lm4 <- update(lm1, mpg ~ am + qsec + wt + hp)
+lm5 <- update(lm1, mpg ~ am + qsec + wt + hp + disp)
+anova(lm1, lm2, lm3, lm4, lm5)
+```
+If you look at the p-value’s you will find out that adding any or variable in addition to “am”, “qsec” and “wt” will increase the variation in the model to make p-value insignificant.  
+This we can confirm by,
+```{r lm7}
+summary(lm3)$coef
+```
+We can confirm here that all the variables are statistically significant and the r.square is 0.85. This model is better than the simple linear model made in Normal/simple linear model above.  
+With this model we found that cars with manual transmission have 2.936 more mpg than automatic ones.
+
+Ploting the relation of the 4 variables.
+```{R plot2 }
+lm3data <- select(data2, "mpg", "am", "qsec", "wt")
+lm3.1 <- ggplot(lm3data, aes(am, mpg))+
+    geom_boxplot() + 
+    ylab ("mpg") +
+    ggtitle("mpg - Manueal vs Auto")
+
+lm3.2 <- ggplot(lm3data, aes(am, qsec))+
+    geom_boxplot() + 
+    ylab ("Time(s) to do 1/4 mile") +
+    ggtitle("qsec - Manual vs Auto")
+
+lm3.3 <- ggplot(lm3data, aes(am, wt))+
+    geom_boxplot() + 
+    ylab ("Weight (1000 lbs)") +
+    ggtitle("wt - Manual vs Auto")
+
+a<-plot_grid(lm3.1, lm3.2, lm3.3,
+          ncol = 3, nrow = 1)
+a
+```
+
+Here we can confirm what the coefficients told us: Manual cars consume less energy (higher mpg) but this happens mainly because they are lighter (among other factors). We can translate the “time to do 1/4 mile” as horsepower. Manual transmission shows an slight decrease in this time (what means more horsepower), however in our model has a possitive influence (possitive value).
+
+```{r lm8}
+summary(lm(mpg~qsec, data=data))$coef
+```
+
+## Diagnostic Plots.
+#### Residuals.
+```{r plot3}
+plot1 <- ggplot(lm3, aes(.fitted, .resid))+
+    geom_point(color='steelblue') + 
+    stat_smooth(method="loess",color='black') +
+    geom_hline(yintercept=0, col="maroon", linetype="dashed") +
+    xlab("Fitted values") + ylab ("Residuals") +
+    ggtitle("Residual vs Fitted Plot")
+
+plot2 <- ggplot(lm3, aes(.fitted, sqrt(abs(.stdresid)))) +
+    geom_point(na.rm=T,color='steelblue') + 
+    stat_smooth(method="loess", na.rm=T,color='black') +
+    xlab("Fitted values") + ylab(expression(sqrt("|Standarized residuals"))) + 
+    ggtitle("Scale-Location")
+
+plot3 <- ggplot(lm3, aes(qqnorm(.stdresid)[[1]], .stdresid)) +
+    geom_point(na.rm=T,color='steelblue') + 
+    stat_smooth(method="loess", na.rm=T,color='black') +
+    xlab("Theoretical Quantiles") + ylab("Standardized Residuals") + 
+    ggtitle("Normal Q-Q") 
+
+plot_grid(plot1, plot2, plot3,
+          ncol = 3, nrow = 1)
+```
+
+By looking at residuals (plots 1 and 2) we found out that there is not any sort of pattern or clue to reject the validity of the model. It is remarcable that looking at Normal Q-Q plot, the residuals are distributed evenly along the curve but it seems that they follow an exponential curve.

@@ -1,0 +1,142 @@
+---
+title: "Reproducible Research"
+author: "Naman Desai"
+date: "19/06/2020"
+output: html_document
+keep_md: true
+---
+```{r Initiation}
+#Setting the echos of all the chunks equal to true.
+knitr::opts_chunk$set(echo = TRUE)
+#Loading required packages.
+library(dplyr)
+library(ggplot2)
+```
+## Introduction.
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantiﬁed self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to ﬁnd patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+The data can be obtained from the parent folder in the form of a .zip file named,activity.zip .  
+
+## Loading and preprocessing the data.
+After unzipping the data, make sure to place it in the folder alond with the R Project you will be runnit it on,
+```{r ReadingTheData}
+#Opening the file to be read,
+filedata<-file(description="activity.csv",open="r")
+#Reading the .csv(comma separated file) and storing it in a variable called data.
+data<-read.csv(file=filedata)
+#Storing a copy.
+cachedata<-data
+#Removing the rows with NA values.
+data<-data[!is.na(data$steps),]
+```
+
+Exploring the data,
+```{r ExploringTheData}
+#Basic data exploration.
+head(data)
+#Advanced data exploration
+str(data)
+#Taking summary of the data.
+summary(data)
+#Setting and making the class of the date as Date.
+data$date<-as.Date(data$date)
+cachedata$date<-as.Date(cachedata$date)
+```
+
+## The total number of steps per day.
+Calculating the sum of the steps taken per dat and ploting a histogram for it ignoring the missing values but taking into concideration the nil(0) values,
+```{r SumOfStepsPerDay,results="hide"}
+#Grouping the data by date.
+databydate<-group_by(data,date)
+#Summarizing the data by taking the sum of the total number of steps taken each day.
+stepsperday<-summarize(databydate,sum=sum(steps))
+#Plotting the histogram of the sum of steps per day,
+hist(stepsperday$sum,breaks=60,main="Histogram of total number of steps per day",xlab="Total number of steps in a day",col="steelblue")
+```
+
+Calculating the mean and median of the total number steps taken each day,
+```{r MeanAndMedian}
+meanperday<-mean(stepsperday$sum)
+medianperday<-median(stepsperday$sum)
+```
+The mean of number of steps per day is,
+```{r echo=FALSE}
+meanperday  
+```
+The median of the  number of steps per day is,
+```{r echo=FALSE}
+medianperday
+```
+
+## The average daily activity pattern.
+Calculating the sum of the steps taken per 5 minute interval and ploting a line graph for it ignoring the missing values but taking into concideration the nil(0) values,
+```{r SumOfStepsPerInterval,results="hide"}
+#Grouping the data by interval.
+databyinterval<-group_by(data,interval)
+#Summarizing the data by taking the sum of the total number of steps taken each interval.
+stepsperinterval<-summarize(databyinterval,mean=mean(steps))
+#Plotting the histogram of the sum of steps per interval,
+ggplot(stepsperinterval,aes(x=interval,y=mean))+geom_line(color="steelblue")+labs(title="Average Number of Steps Taken in 5-min Intervals",y="Average Number of Steps", x="5-min Interval Times Series")
+```
+
+Calculating the intrval between which the average number of steps is the maximum.
+```{r MaxStepsInterval}
+#Finding the nterval corrsponding to the maximum average number of steps.
+maxStepsInterval<-stepsperinterval$interval[stepsperinterval$mean==max(stepsperinterval$mean)]
+```
+The interval having the highest average number of steps is,
+```{r echo=FALSE}
+maxStepsInterval  
+```
+
+## Imputing missing values
+Imputing the missing values by taking the average of non NA values and then substituting the values there they are NA. This decreses or comparitively decreases the noice or the provision of unwanted results.  
+Prior imputation,
+```{r pri}
+data<-cachedata
+colSums(is.na(data))
+```
+```{r ImputingMissingValues}
+data$steps[is.na(data$steps)==TRUE]<-mean(data$steps,na.rm=TRUE)
+```
+Post imputation,
+```{r poi}
+colSums(is.na(data))
+```
+
+Calculating the sum of the steps taken per dat and ploting a histogram after inputing the missing values but taking into concideration the nil(0) values,
+```{r SumOfStepsPerDayPostImputation,results="hide"}
+#Grouping the data by date.
+databydate<-group_by(data,date)
+#Summarizing the data by taking the sum of the total number of steps taken each day.
+stepsperday<-summarize(databydate,sum=sum(steps,na.rm=TRUE))
+#Plotting the histogram of the sum of steps per day,
+hist(stepsperday$sum,breaks=60,main="Histogram of total number of steps per day",xlab="Total number of steps in a day",col="steelblue")
+```
+
+Calculating the mean and median of the total number steps taken each day,
+```{r MeanAndMedianPostImputation}
+meanperday<-mean(stepsperday$sum)
+medianperday<-median(stepsperday$sum)
+```
+The mean of number of steps per day is,
+```{r echo=FALSE}
+meanperday  
+```
+The median of the  number of steps per day is,
+```{r echo=FALSE}
+medianperday
+```
+
+Mean values stays the same but therer is slight difference in meadian value.
+
+## The differences in activity patterns between weekdays and weekends.
+Splitting the Weekdays and Weekends using conditional branching the poting them using facet.grid
+```{r WeekdaysAndWeekends}
+#PLacing a conditional branch, to split Weekdays and Weekends.
+data$day<-ifelse(weekdays(as.Date(data$date))%in%c("Saturday","Sunday"),"Weekday","Weekend")
+#Grouping the data by date and interval.
+databydateandinterval<-group_by(data,interval,day)
+#Summarizing the data by taking the sum of the total number of steps taken each day.
+plotdata<-summarize(databydateandinterval,mean=mean(steps,na.rm=T))
+ggplot(plotdata, aes(x=interval, y=mean,color=day))+facet_grid(day~.)+geom_line()+ labs(title="Average Number of Steps Taken In 5-min Interval on Weekday/Weekend", y="Average Number of Steps", x="5-min Interval Times Series")
+```
