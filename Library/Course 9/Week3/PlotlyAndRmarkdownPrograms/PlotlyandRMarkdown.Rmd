@@ -1,0 +1,18 @@
+---
+title: "PlotlyAndRmarkdown"
+author: "Naman Desai"
+date: "03/01/2021"
+output: html_document
+---
+The date and time is,  
+```{r date and time, echo=FALSE, comment=""}
+Sys.time()
+```
+PLotly plot,  
+```{r plot,warning=FALSE,echo=FALSE,message=FALSE}
+library(plotly)
+temp <- rnorm(100, mean = 30, sd = 5)
+pressue <- rnorm(100)
+dtime <- 1:100
+plot_ly(x = ~temp, y = ~pressue, z = ~dtime, type = "scatter3d", color = ~temp)
+```

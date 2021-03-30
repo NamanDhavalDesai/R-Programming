@@ -1,0 +1,17 @@
+---
+title: "Leaflet And R Markdown"
+author: "Naman Desai"
+date: "25/12/2020"
+output: html_document
+---
+The date and time is,
+```{r date and time, echo=FALSE, comment=""}
+Sys.time()
+```
+Leaflet plot,
+```{r plot, warning=FALSE, echo=FALSE}
+library(leaflet)
+data<-data.frame(lat=runif(500,max=19.20,min=19.05),
+                 lng=runif(500,max=72.94,min=72.82))
+data%>%leaflet()%>%addTiles()%>%addMarkers(clusterOptions = markerClusterOptions())
+```
